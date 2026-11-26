@@ -19,4 +19,12 @@ for archive in archives:
    target=OUT/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data);seen.add(item.filename)
 assert seen==set(manifest),'The website package is incomplete'
 assert (OUT/'index.html').is_file()
+shutil.copy2(ROOT / 'rules.html', OUT / 'rules.html')
+# The tracker toolbar lives in the verified archive.
+toolbar = OUT / 'pokedices' / 'tracker-ui.js'
+source = toolbar.read_text()
+formats_button = """${pdButton('home','Formats')}"""
+assert source.count(formats_button) == 1, "Advanced toolbar changed"
+rules_link = '<a class="btn btn--sm" href="rules.html" target="_blank" rel="noopener">Rules</a>'
+toolbar.write_text(source.replace(formats_button, formats_button + ' ' + rules_link))
 print(f'Verified and built {len(seen)} website files.')
