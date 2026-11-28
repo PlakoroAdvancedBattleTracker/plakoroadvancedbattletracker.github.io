@@ -59,6 +59,15 @@ export async function refresh(out,fetcher=request){
  await fs.writeFile(path.join(out,'data.js'),rebuilt);
  await fs.writeFile(path.join(out,'published-modern.json'),json(modern));
  await fs.writeFile(path.join(out,'chronicle-bundle.js'),`window.CHRONICLE_FEED_URL='published-chronicle.json';window.CHRONICLE_SOURCE_URL=${json(legacy.source)};window.CHRONICLE_DATA=${json(legacy)};\n`);
+ // Newly added species still need a visible thumbnail when PokéDices has
+ // no built-in sprite. Use that species' current character card artwork.
+ const spriteFallbacks={};
+ for(const card of [...modern.characters,...Object.values(converted.pokemon).map(p=>p.pokemon)]){
+  const name=card.name.replace(/ \((?:1997|2026)\)$/,'').replace(/^(?:(?:Strong|Legendary|Normal|Surfing)\s+)+/i,''),key='ui/pokemon-'+name+'.png';
+  try{await fs.access(path.join(out,key));}catch{spriteFallbacks[key]??=card.image+(hashes[card.image]?'?v='+hashes[card.image]:'');}
+ }
+ const compiledPath=path.join(out,'pokedices/app.js');
+ await fs.writeFile(compiledPath,`window.PLAKORO_DICE_ASSETS={...(window.PLAKORO_DICE_ASSETS||{}),...${json(spriteFallbacks)}};\n`+await fs.readFile(compiledPath,'utf8'));
  await patchRuntime(out);
  const report={checkedAt:new Date().toISOString(),modernRevision:modern.sha,legacyRevision:legacy.revision,
   counts:{modernPokemon:modern.characters.length,modernMoves:modern.moves.length,legacyPokemon:converted.order.length,legacyMoves:Object.values(converted.movePools).flat().length}};
